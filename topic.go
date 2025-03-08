@@ -24,7 +24,7 @@ func (m Message) JSON() string {
 
 type Topic struct {
 	lock            sync.Mutex
-	messages        []Message
+	messages        []*Message
 	ttl             time.Duration
 	cleanupInterval time.Duration
 	offset          int
@@ -38,7 +38,7 @@ type Topic struct {
 func NewTopic(ctx context.Context, ttl, cleanupInterval time.Duration, logLevel hclog.Level) *Topic {
 	ctx, cancel := context.WithCancel(ctx)
 	t := &Topic{
-		messages:        make([]Message, 0),
+		messages:        make([]*Message, 0),
 		ttl:             ttl,
 		cleanupInterval: cleanupInterval,
 		offset:          0,
@@ -69,7 +69,7 @@ func (t *Topic) Publish(data any) {
 	default:
 	}
 
-	msg := Message{
+	msg := &Message{
 		Offset:     t.offset,
 		Data:       data,
 		Timestamp:  time.Now(),
@@ -97,7 +97,7 @@ func (t *Topic) cleanupWorker() {
 			now := time.Now()
 			expiredMessages := 0
 
-			t.messages = slices.DeleteFunc(t.messages, func(message Message) bool {
+			t.messages = slices.DeleteFunc(t.messages, func(message *Message) bool {
 				if message.Expiration.Before(now) {
 					expiredMessages++
 					return true
@@ -126,16 +126,11 @@ func (t *Topic) cleanupWorker() {
 	}
 }
 
-func (t *Topic) Subscribe(ctx context.Context, consumerName string) <-chan Message {
-	ch := make(chan Message, 1_000_000)
+func (t *Topic) Subscribe(ctx context.Context, consumerName string) <-chan *Message {
+	ch := make(chan *Message, 1_000_000)
 
 	consumerOffset := 0
 	logger := t.logger.Named(consumerName)
-
-	go func() {
-		<-t.ctx.Done()
-
-	}()
 
 	go func() {
 		defer close(ch)
