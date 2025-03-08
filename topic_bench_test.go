@@ -7,20 +7,82 @@ import (
 	"time"
 )
 
+const testMessage = `
+# Read system health check
+path "sys/health"
+{
+capabilities = ["read", "sudo"]
+}
+
+# Create and manage ACL policies broadly across Vault
+
+# List existing policies
+path "sys/policies/acl"
+{
+capabilities = ["list"]
+}
+
+# Create and manage ACL policies
+path "sys/policies/acl/*"
+{
+capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+# Enable and manage authentication methods broadly across Vault
+
+# Manage auth methods broadly across Vault
+path "auth/*"
+{
+capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+# Create, update, and delete auth methods
+path "sys/auth/*"
+{
+capabilities = ["create", "update", "delete", "sudo"]
+}
+
+# List auth methods
+path "sys/auth"
+{
+capabilities = ["read"]
+}
+
+# Enable and manage the key/value secrets engine at 'secret/' path
+
+# List, create, update, and delete key/value secrets
+path "secret/*"
+{
+capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+# Manage secrets engines
+path "sys/mounts/*"
+{
+capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+# List existing secrets engines.
+path "sys/mounts"
+{
+capabilities = ["read"]
+}
+`
+
 func BenchmarkPublish(b *testing.B) {
 	topic := NewTopic(context.Background(), 20*time.Millisecond, 20*time.Millisecond, hclog.Off)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		topic.Publish("test message")
+		topic.Publish(testMessage)
 	}
 }
 
 func BenchmarkSubscribe(b *testing.B) {
-	topic := NewTopic(context.Background(), 20*time.Millisecond, 20*time.Millisecond, hclog.Off)
+	topic := NewTopic(context.Background(), 5*time.Second, time.Second, hclog.Off)
 
-	for i := 0; i < 100000; i++ {
-		topic.Publish("test message")
+	for i := 0; i < 1_000_000; i++ {
+		topic.Publish(testMessage)
 	}
 
 	b.ResetTimer()
@@ -39,13 +101,13 @@ func BenchmarkSubscribe(b *testing.B) {
 }
 
 func BenchmarkCleanupWorker(b *testing.B) {
-	topic := NewTopic(context.Background(), 15*time.Second, time.Second, hclog.Off)
+	topic := NewTopic(context.Background(), 5*time.Second, time.Second, hclog.Off)
 
 	now := time.Now()
 	for i := 0; i < 100_000_000; i++ {
 		topic.messages = append(topic.messages, &Message{
 			Offset:     i,
-			Data:       "old message",
+			Data:       testMessage,
 			Timestamp:  now.Add(-time.Minute),
 			Expiration: now.Add(-time.Second),
 		})

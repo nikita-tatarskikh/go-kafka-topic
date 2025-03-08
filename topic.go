@@ -69,11 +69,13 @@ func (t *Topic) Publish(data any) {
 	default:
 	}
 
+	now := time.Now()
+
 	msg := &Message{
 		Offset:     t.offset,
 		Data:       data,
-		Timestamp:  time.Now(),
-		Expiration: time.Now().Add(t.ttl),
+		Timestamp:  now,
+		Expiration: now.Add(t.ttl),
 	}
 
 	t.messages = append(t.messages, msg)

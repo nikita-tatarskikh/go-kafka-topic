@@ -28,19 +28,19 @@ func TestTopic_Capacity(t *testing.T) {
 		topic.Cancel()
 	}()
 
-	var consumer1res, consumer2res []int
+	var consumer1res, consumer2res []string
 
 	go func() {
 		defer wg.Done()
-		for event := range topic.Subscribe(context.Background(), "consumer-1") {
-			consumer1res = append(consumer1res, event.Data.(int))
+		for message := range topic.Subscribe(context.Background(), "consumer-1") {
+			consumer1res = append(consumer1res, message.Data.(string))
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
-		for event := range topic.Subscribe(context.Background(), "consumer-2") {
-			consumer2res = append(consumer2res, event.Data.(int))
+		for message := range topic.Subscribe(context.Background(), "consumer-2") {
+			consumer2res = append(consumer2res, message.Data.(string))
 		}
 	}()
 
@@ -62,7 +62,7 @@ func TestTopic_CapacityV2(t *testing.T) {
 
 	testData := generateTestData()
 
-	var consumer1res, consumer2res []int
+	var consumer1res, consumer2res []string
 	startConsumers := sync.WaitGroup{}
 	startConsumers.Add(2)
 
@@ -70,7 +70,7 @@ func TestTopic_CapacityV2(t *testing.T) {
 		defer test.Done()
 		startConsumers.Done()
 		for event := range topic.Subscribe(context.Background(), "consumer-1") {
-			consumer1res = append(consumer1res, event.Data.(int))
+			consumer1res = append(consumer1res, event.Data.(string))
 		}
 	}()
 
@@ -78,7 +78,7 @@ func TestTopic_CapacityV2(t *testing.T) {
 		defer test.Done()
 		startConsumers.Done()
 		for event := range topic.Subscribe(context.Background(), "consumer-2") {
-			consumer2res = append(consumer2res, event.Data.(int))
+			consumer2res = append(consumer2res, event.Data.(string))
 		}
 	}()
 
@@ -201,7 +201,7 @@ func TestTopic_CancelConsumersWhileProcessing(t *testing.T) {
 	test := sync.WaitGroup{}
 	test.Add(3)
 
-	var consumer1res, consumer2res []int
+	var consumer1res, consumer2res []string
 	startConsumers := sync.WaitGroup{}
 	startConsumers.Add(2)
 
@@ -211,16 +211,16 @@ func TestTopic_CancelConsumersWhileProcessing(t *testing.T) {
 	go func() {
 		defer test.Done()
 		startConsumers.Done()
-		for event := range topic.Subscribe(consumer1ctx, "consumer-1") {
-			consumer1res = append(consumer1res, event.Data.(int))
+		for message := range topic.Subscribe(consumer1ctx, "consumer-1") {
+			consumer1res = append(consumer1res, message.Data.(string))
 		}
 	}()
 
 	go func() {
 		defer test.Done()
 		startConsumers.Done()
-		for event := range topic.Subscribe(consumer2ctx, "consumer-2") {
-			consumer2res = append(consumer2res, event.Data.(int))
+		for message := range topic.Subscribe(consumer2ctx, "consumer-2") {
+			consumer2res = append(consumer2res, message.Data.(string))
 		}
 	}()
 
@@ -246,11 +246,11 @@ func TestTopic_CancelConsumersWhileProcessing(t *testing.T) {
 	assert.NotNil(t, consumer2res, "Consumer 2 should have some data")
 }
 
-func generateTestData() []int {
+func generateTestData() []string {
 	const maxCount = 1000000
-	testData := make([]int, maxCount)
+	testData := make([]string, maxCount)
 	for i := 0; i < maxCount; i++ {
-		testData[i] = i
+		testData[i] = testMessage
 	}
 	return testData
 }
