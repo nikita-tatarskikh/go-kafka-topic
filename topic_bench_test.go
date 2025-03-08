@@ -70,7 +70,7 @@ capabilities = ["read"]
 `
 
 func BenchmarkPublish(b *testing.B) {
-	topic := NewTopic(context.Background(), 20*time.Millisecond, 20*time.Millisecond, hclog.Off)
+	topic := NewTopic(context.Background(), 15*time.Minute, time.Minute, hclog.Info)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -79,7 +79,7 @@ func BenchmarkPublish(b *testing.B) {
 }
 
 func BenchmarkSubscribe(b *testing.B) {
-	topic := NewTopic(context.Background(), 5*time.Second, time.Second, hclog.Off)
+	topic := NewTopic(context.Background(), 15*time.Minute, time.Minute, hclog.Info)
 
 	for i := 0; i < 1_000_000; i++ {
 		topic.Publish(testMessage)
@@ -101,14 +101,23 @@ func BenchmarkSubscribe(b *testing.B) {
 }
 
 func BenchmarkCleanupWorker(b *testing.B) {
-	topic := NewTopic(context.Background(), 5*time.Second, time.Second, hclog.Off)
+	topic := NewTopic(context.Background(), 30*time.Second, time.Second, hclog.Info)
 
 	now := time.Now()
-	for i := 0; i < 100_000_000; i++ {
+	for i := 0; i < 1_000_000; i++ {
+		if i%2 == 0 {
+			topic.messages = append(topic.messages, &Message{
+				Offset:     i,
+				Data:       testMessage,
+				Expiration: now.Add(time.Minute),
+			})
+
+			continue
+		}
+
 		topic.messages = append(topic.messages, &Message{
 			Offset:     i,
 			Data:       testMessage,
-			Timestamp:  now.Add(-time.Minute),
 			Expiration: now.Add(-time.Second),
 		})
 	}

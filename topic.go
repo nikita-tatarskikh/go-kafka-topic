@@ -13,7 +13,6 @@ import (
 type Message struct {
 	Offset     int       `json:"offset"`
 	Data       any       `json:"data"`
-	Timestamp  time.Time `json:"timestamp"`
 	Expiration time.Time `json:"expiration"`
 }
 
@@ -23,7 +22,7 @@ func (m Message) JSON() string {
 }
 
 type Topic struct {
-	lock            sync.Mutex
+	lock            sync.RWMutex
 	messages        []*Message
 	ttl             time.Duration
 	cleanupInterval time.Duration
@@ -69,13 +68,10 @@ func (t *Topic) Publish(data any) {
 	default:
 	}
 
-	now := time.Now()
-
 	msg := &Message{
 		Offset:     t.offset,
 		Data:       data,
-		Timestamp:  now,
-		Expiration: now.Add(t.ttl),
+		Expiration: time.Now().Add(t.ttl),
 	}
 
 	t.messages = append(t.messages, msg)
